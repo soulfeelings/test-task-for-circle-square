@@ -1,0 +1,28 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "project": ["./tsconfig.json"],
+    "tsconfigRootDir": "__dirname"
+  },
+  "plugins": ["@typescript-eslint", "react-refresh"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:@typescript-eslint/recommended-requiring-type-checking"
+  ],
+  "settings": {
+    "react": {
+      "version": "18"
+    }
+  },
+  "ignorePatterns": ["dist/**"],
+  "overrides": [
+    {
+      "files": ["*.tsx"],
+      "rules": {
+        "react-refresh/only-export-components": ["warn", { "allowConstantExport": true }]
+      }
+    }
+  ]
+}
