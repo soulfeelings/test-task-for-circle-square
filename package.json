@@ -1,0 +1,11 @@
+{
+  "name": "the-last-of-guss-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": ["backend", "frontend"],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces",
+    "dev": "npm run dev --workspaces"
+  }
+}
