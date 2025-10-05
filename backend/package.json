@@ -1,0 +1,33 @@
+{
+  "name": "guss-game-backend",
+  "version": "1.0.0",
+  "description": "Backend for The Last of Guss game",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx prisma/seed.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "packageManager": "yarn@1.22.19",
+  "dependencies": {
+    "@fastify/cors": "^8.4.0",
+    "@fastify/websocket": "^8.3.1",
+    "@prisma/client": "^5.7.1",
+    "fastify": "^4.24.3",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "prisma": "^5.7.1",
+    "tsx": "^4.6.2",
+    "typescript": "^5.3.3"
+  }
+}

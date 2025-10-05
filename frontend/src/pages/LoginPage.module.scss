@@ -1,0 +1,48 @@
+@use "../shared/styles/variables.scss" as *;
+@use "../shared/styles/mixins.scss" as *;
+
+.loginPage {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.container {
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+}
+
+.title {
+  font-size: 2rem;
+  margin-bottom: $spacing-md;
+}
+
+.form {
+  margin: $spacing-xl 0;
+}
+
+.input {
+  @include input-base;
+  margin-bottom: $spacing-md;
+}
+
+.button {
+  @include button-primary;
+  width: 100%;
+  padding: $spacing-md;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.hints {
+  text-align: left;
+  @include card;
+  margin-top: $spacing-xl;
+
+  ul {
+    margin: $spacing-sm 0;
+    padding-left: $spacing-lg;
+  }
+}

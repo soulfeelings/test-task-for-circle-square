@@ -1,0 +1,51 @@
+@use "./variables.scss" as *;
+
+// Глобальные стили
+* {
+  box-sizing: border-box;
+}
+
+#root {
+  width: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: $font-mono;
+  background-color: $bg-primary;
+  color: $text-primary;
+  line-height: 1.4;
+}
+
+.app {
+  min-height: 100vh;
+  width: 100%;
+  background-color: $bg-primary;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-xl;
+}
+
+// Утилиты
+.loading,
+.error {
+  text-align: center;
+  padding: $spacing-xl;
+  font-size: 1.2rem;
+}
+
+.error {
+  color: $text-error;
+  background-color: #2a0a0a;
+  border: 1px solid $border-error;
+  margin: $spacing-md;
+  padding: $spacing-md;
+}

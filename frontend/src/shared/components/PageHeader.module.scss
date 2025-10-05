@@ -1,0 +1,33 @@
+@use "../styles/variables.scss" as *;
+@use "../styles/mixins.scss" as *;
+
+.header {
+  @include page-header;
+
+  @include mobile {
+    flex-direction: column;
+    gap: $spacing-md;
+    text-align: center;
+  }
+}
+
+.title {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+}
+
+.role {
+  color: $text-secondary;
+  font-size: 0.9rem;
+}
+
+.logoutButton,
+.backButton {
+  @include button-base;
+}
