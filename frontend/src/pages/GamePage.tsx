@@ -1,94 +1,123 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useUser } from "../shared/contexts/UserContext";
 import { apiClient } from "../shared/api/client";
 import type { Round } from "../shared/types/api";
+import styles from "./GamePage.module.scss";
 
 export default function GamePage() {
   const { id } = useParams<{ id: string }>();
   const [round, setRound] = useState<Round | null>(null);
-  const [userPoints, setUserPoints] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(0);
-  const [isTapping, setIsTapping] = useState(false);
   const [message, setMessage] = useState("");
+  const [isLoadingRound, setIsLoadingRound] = useState(false);
+  const [isLoadingUserStats, setIsLoadingUserStats] = useState(false);
   const { user } = useUser();
+
+  const [stats, setStats] = useState({ taps: 0, points: 0 });
+  const syncTapsRef = useRef<number>(0);
 
   useEffect(() => {
     if (id) {
       loadRound();
-      startTimer();
+      loadUserStats();
     }
   }, [id]);
 
-  const loadRound = async () => {
-    try {
-      const rounds = await apiClient.getRounds();
-      const currentRound = rounds.find((r) => r.id === id);
-      setRound(currentRound || null);
-    } catch (error) {
-      console.error("Error loading round:", error);
-    }
-  };
+  useEffect(() => {
+    if (!round) return;
 
-  const startTimer = () => {
-    let isPolling = true;
+    const interval = setInterval(async () => {
+      const now = new Date();
+      const startTime = new Date(round.startTime);
+      const endTime = new Date(round.endTime);
 
-    const pollForUpdates = async () => {
-      if (!round || !isPolling) return;
+      if (now < startTime) {
+        const remaining = Math.floor(
+          (startTime.getTime() - now.getTime()) / 1000
+        );
+        setTimeRemaining(remaining);
 
-      try {
-        const updatedRound = await apiClient.pollRoundUpdates(round.id, 30000);
-        setRound(updatedRound);
-
-        // Если раунд еще активен или в cooldown, продолжаем polling
-        const now = new Date();
-        const startTime = new Date(updatedRound.startTime);
-        const endTime = new Date(updatedRound.endTime);
-
-        if (now < endTime) {
-          setTimeout(pollForUpdates, 1000); // Небольшая задержка перед следующим запросом
+        // Обновляем раунд когда начинается (переход из COOLDOWN в ACTIVE)
+        if (remaining === 0) {
+          await loadRound();
         }
-      } catch (error) {
-        console.error("Polling error:", error);
-        // При ошибке продолжаем polling через 5 секунд
-        if (isPolling) {
-          setTimeout(pollForUpdates, 5000);
+      } else if (now < endTime) {
+        const remaining = Math.floor(
+          (endTime.getTime() - now.getTime()) / 1000
+        );
+        setTimeRemaining(remaining);
+
+        // Обновляем раунд когда заканчивается (переход из ACTIVE в FINISHED)
+        if (remaining === 0) {
+          await loadRound();
         }
-      }
-    };
-
-    // Запускаем polling
-    pollForUpdates();
-
-    // Обновляем таймер каждую секунду для плавного отображения
-    const interval = setInterval(() => {
-      if (round) {
-        const now = new Date();
-        const startTime = new Date(round.startTime);
-        const endTime = new Date(round.endTime);
-
-        if (now < startTime) {
-          setTimeRemaining(
-            Math.ceil((startTime.getTime() - now.getTime()) / 1000)
-          );
-        } else if (now < endTime) {
-          setTimeRemaining(
-            Math.ceil((endTime.getTime() - now.getTime()) / 1000)
-          );
-        } else {
-          setTimeRemaining(0);
-        }
+      } else {
+        setTimeRemaining(0);
+        await loadRound();
       }
     }, 1000);
 
-    return () => {
-      isPolling = false;
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
+  }, [round, id]);
+
+  const loadRound = async () => {
+    if (!id) return;
+    setIsLoadingRound(true);
+    try {
+      const roundData = await apiClient.getRoundById(id);
+      setRound(roundData);
+    } catch (error) {
+      console.error("Error loading round:", error);
+    } finally {
+      setIsLoadingRound(false);
+    }
   };
 
-  const handleTap = async () => {
-    if (!round || !id || isTapping) return;
+  const loadUserStats = async () => {
+    if (!id) return;
+    setIsLoadingUserStats(true);
+    try {
+      const userStats = await apiClient.getUserRoundStats(id);
+      setStats(userStats);
+    } catch (error) {
+      console.error("Error loading user stats:", error);
+    } finally {
+      setIsLoadingUserStats(false);
+    }
+  };
+
+  const syncTaps = useCallback(async () => {
+    if (!id || syncTapsRef.current === 0) return;
+    const taps = syncTapsRef.current;
+
+    try {
+      syncTapsRef.current = 0;
+      const response = await apiClient.batchTap(id, taps);
+      console.log("Taps synced:", response);
+    } catch (error) {
+      syncTapsRef.current = syncTapsRef.current + taps;
+      console.error("Error syncing taps:", error);
+    }
+  }, [id]);
+
+  // Batch отправка тапов каждые 3 секунды
+  useEffect(() => {
+    if (!id) return;
+
+    const syncInterval = setInterval(() => {
+      syncTaps();
+    }, 3000);
+
+    return () => clearInterval(syncInterval);
+  }, [syncTaps]);
+
+  const calculateTapPoints = (tapCount: number): number => {
+    return tapCount % 11 === 0 ? 10 : 1;
+  };
+
+  const handleTap = () => {
+    if (!round || !id) return;
 
     const now = new Date();
     const startTime = new Date(round.startTime);
@@ -99,23 +128,16 @@ export default function GamePage() {
       return;
     }
 
-    setIsTapping(true);
-    try {
-      const response = await apiClient.tap(id);
-      if (response.success) {
-        setUserPoints(response.totalPoints);
-        if (response.message) {
-          setMessage(response.message);
-          setTimeout(() => setMessage(""), 2000);
-        }
-      } else {
-        setMessage(response.message || "Ошибка тапа");
-      }
-    } catch (error) {
-      setMessage("Ошибка соединения");
-    } finally {
-      setIsTapping(false);
-    }
+    // Увеличиваем счетчик тапов и очков
+    setStats((prev) => {
+      const newTapCount = prev.taps + 1;
+      const tapPoints = calculateTapPoints(newTapCount);
+      return {
+        taps: newTapCount,
+        points: prev.points + tapPoints,
+      };
+    });
+    syncTapsRef.current++;
   };
 
   const getRoundStatus = () => {
@@ -125,9 +147,9 @@ export default function GamePage() {
     const startTime = new Date(round.startTime);
     const endTime = new Date(round.endTime);
 
-    if (now < startTime) return "cooldown";
-    if (now > endTime) return "finished";
-    return "active";
+    if (now < startTime) return "COOLDOWN";
+    if (now > endTime) return "FINISHED";
+    return "ACTIVE";
   };
 
   const formatTime = (seconds: number) => {
@@ -140,7 +162,11 @@ export default function GamePage() {
 
   const status = getRoundStatus();
 
-  if (!round) {
+  if (!round && isLoadingRound) {
+    return <div className="loading">Загрузка раунда...</div>;
+  }
+
+  if (isLoadingUserStats) {
     return <div className="loading">Загрузка раунда...</div>;
   }
 
@@ -158,9 +184,9 @@ export default function GamePage() {
 
       <div className="game-container">
         <div className="game-info">
-          <div className="round-id">Round ID: {round.id}</div>
+          <div className="round-id">Round ID: {round?.id}</div>
           <div className="game-status">
-            {status === "cooldown" && (
+            {status === "COOLDOWN" && (
               <>
                 <div className="status">Cooldown</div>
                 <div className="timer">
@@ -168,20 +194,22 @@ export default function GamePage() {
                 </div>
               </>
             )}
-            {status === "active" && (
+            {status === "ACTIVE" && (
               <>
                 <div className="status">Раунд активен!</div>
                 <div className="timer">
                   До конца осталось: {formatTime(timeRemaining)}
                 </div>
-                <div className="user-points">Мои очки - {userPoints}</div>
+                <div className="user-points">
+                  Тапы: {stats.taps} | Очки: {stats.points}
+                </div>
               </>
             )}
-            {status === "finished" && (
+            {status === "FINISHED" && (
               <>
                 <div className="status">Раунд завершен</div>
                 <Link
-                  to={`/round/${round.id}/stats`}
+                  to={`/round/${round?.id}/stats`}
                   className="view-stats-button"
                 >
                   Посмотреть статистику
@@ -193,7 +221,7 @@ export default function GamePage() {
 
         <div className="goose-container">
           <div className="goose-art">
-            <pre>{`
+            <pre className={styles.gooseArtPre} onClick={handleTap}>{`
             ░░░░░░░░░░░░░░░
           ░░▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░
         ░░▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░
@@ -206,16 +234,6 @@ export default function GamePage() {
         ░░░░░░░░░░░░░░░░░░░░░░░░░░
             `}</pre>
           </div>
-
-          {status === "active" && (
-            <button
-              onClick={handleTap}
-              disabled={isTapping}
-              className={`goose-button ${isTapping ? "tapping" : ""}`}
-            >
-              {isTapping ? "ТАП!" : "ТАПАТЬ ГУСЯ"}
-            </button>
-          )}
         </div>
 
         {message && <div className="message">{message}</div>}

@@ -1,39 +1,39 @@
-# Makefile для управления проектом "The Last of Guss"
+# Makefile для управления проектом "The Last of Guss" (локальный запуск)
 
-.PHONY: help start stop dev prod build clean install setup db-setup
+.PHONY: help start stop dev build clean install setup db-setup
 
 # Показать справку
 help:
 	@echo "Доступные команды:"
-	@echo "  make start   - Запустить полный стек (dev режим)"
-	@echo "  make stop    - Остановить все сервисы"
+	@echo "  make start   - Запустить полный стек локально"
+	@echo "  make stop    - Остановить все процессы"
 	@echo "  make dev     - Запустить в режиме разработки"
-	@echo "  make prod    - Запустить в продакшн режиме"
-	@echo "  make build   - Собрать образы"
-	@echo "  make clean   - Очистить контейнеры и образы"
+	@echo "  make build   - Собрать проект"
+	@echo "  make clean   - Очистить node_modules"
 	@echo "  make setup   - Первоначальная настройка проекта"
-	@echo "  make install - Установить зависимости локально"
+	@echo "  make install - Установить зависимости"
 	@echo "  make db-setup - Настроить базу данных"
 
 # Основная команда для запуска всего стека
 start: setup
-	@echo "🚀 Запускаем полный стек игры 'The Last of Guss'..."
-	docker compose --profile dev up --build -d
-	@echo ""
-	@echo "✅ Приложение запущено в detached режиме!"
+	@echo "🚀 Запускаем полный стек игры 'The Last of Guss' локально..."
 	@echo ""
 	@echo "📱 Фронтенд: http://localhost:5173"
 	@echo "🔧 Бэкенд API: http://localhost:3000"
 	@echo "🗄️  База данных: localhost:5432"
 	@echo ""
-	@echo "💡 Для остановки: make stop"
-	@echo "📊 Для просмотра логов: docker compose logs -f"
+	@echo "💡 Для остановки: Ctrl+C или make stop"
+	@echo ""
+	@trap 'kill %1 %2' INT; \
+	cd backend && yarn dev & \
+	cd frontend && yarn dev & \
+	wait
 
 # Остановка всех сервисов
 stop:
-	@echo "🛑 Останавливаем все сервисы..."
-	docker compose down
-	@echo "✅ Все сервисы остановлены"
+	@echo "🛑 Останавливаем все процессы..."
+	@pkill -f "yarn dev" || true
+	@echo "✅ Все процессы остановлены"
 
 # Первоначальная настройка
 setup:
@@ -44,45 +44,39 @@ setup:
 	fi
 	@echo "✅ Настройка завершена"
 
-# Режим разработки
+# Режим разработки (только бэкенд)
 dev:
-	docker compose --profile dev up --build
+	cd backend && yarn dev
 
-# Продакшн режим
-prod:
-	docker compose --profile prod up --build -d
-
-# Сборка образов
+# Сборка проекта
 build:
-	docker compose build
+	cd backend && yarn build
+	cd frontend && yarn build
 
 # Очистка
 clean:
-	docker compose down --rmi all --volumes --remove-orphans
-	docker system prune -f
+	@echo "🧹 Очищаем node_modules..."
+	rm -rf frontend/node_modules backend/node_modules
+	@echo "✅ Очистка завершена"
 
 # Настройка базы данных
 db-setup:
 	@echo "🗄️ Настраиваем базу данных..."
-	docker compose --profile dev up postgres -d
-	sleep 5
+	@echo "⚠️ Убедитесь что PostgreSQL запущен на порту 5432"
 	cd backend && yarn prisma db push
 	@echo "✅ База данных настроена"
 
-# Локальная установка зависимостей
+# Установка зависимостей
 install:
+	@echo "📦 Устанавливаем зависимости..."
 	cd frontend && yarn install
 	cd backend && yarn install
+	@echo "✅ Зависимости установлены"
 
-# Локальный запуск (без Docker)
-dev-local:
-	@echo "⚠️ Для локального запуска нужны:"
-	@echo "  1. PostgreSQL на порту 5432"
-	@echo "  2. Переменные окружения в backend/.env"
-	@echo "  3. Выполнить: make db-setup"
+# Только фронтенд
+frontend:
 	cd frontend && yarn dev
 
-# Сборка для продакшна локально
-build-local:
-	cd frontend && yarn build
-	cd backend && yarn build
+# Только бэкенд
+backend:
+	cd backend && yarn dev

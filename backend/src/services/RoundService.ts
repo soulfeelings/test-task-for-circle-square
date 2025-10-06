@@ -118,53 +118,17 @@ export class RoundService {
   }
 
   /**
-   * Ждет изменения статуса раунда (для long polling)
+   * Получает все раунды с актуальными статусами (вычисляемыми на лету)
    */
-  static async waitForRoundUpdate(
-    roundId: string,
-    timeoutMs: number = 30000
-  ): Promise<Round | null> {
-    const startTime = Date.now();
-    const checkInterval = 1000; // Проверяем каждую секунду
-
-    return new Promise((resolve, reject) => {
-      const checkStatus = async () => {
-        try {
-          const round = await prisma.round.findUnique({
-            where: { id: roundId },
-          });
-
-          if (!round) {
-            reject(new Error("Round not found"));
-            return;
-          }
-
-          // Проверяем, изменился ли статус раунда
-          const currentStatus = getRoundStatus(round.startTime, round.endTime);
-          if (currentStatus !== round.status) {
-            // Обновляем статус в базе
-            const updatedRound = await prisma.round.update({
-              where: { id: roundId },
-              data: { status: currentStatus },
-            });
-            resolve(updatedRound);
-            return;
-          }
-
-          // Проверяем таймаут
-          if (Date.now() - startTime > timeoutMs) {
-            reject(new Error("Timeout"));
-            return;
-          }
-
-          // Продолжаем ждать
-          setTimeout(checkStatus, checkInterval);
-        } catch (error) {
-          reject(error);
-        }
-      };
-
-      checkStatus();
+  static async getAllRoundsWithUpdatedStatuses(): Promise<Round[]> {
+    const rounds = await prisma.round.findMany({
+      orderBy: { createdAt: "desc" },
     });
+
+    // Возвращаем раунды с актуальными статусами без обновления в БД
+    return rounds.map((round) => ({
+      ...round,
+      status: getRoundStatus(round.startTime, round.endTime),
+    }));
   }
 }

@@ -1,4 +1,4 @@
-import { UserRole } from '@prisma/client';
+import { UserRole } from "@prisma/client";
 
 /**
  * Вычисляет очки за тап
@@ -12,7 +12,10 @@ export function calculateTapPoints(tapCount: number): number {
  * Вычисляет очки с учетом роли пользователя
  * Никита всегда получает 0 очков
  */
-export function calculatePointsForUser(tapCount: number, userRole: UserRole): number {
+export function calculatePointsForUser(
+  tapCount: number,
+  userRole: UserRole
+): number {
   if (userRole === UserRole.NIKITA) {
     return 0;
   }

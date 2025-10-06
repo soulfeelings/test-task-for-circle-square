@@ -3,14 +3,14 @@
 export interface User {
   id: string;
   username: string;
-  role: "survivor" | "nikita" | "admin";
+  role: "SURVIVOR" | "NIKITA" | "ADMIN";
 }
 
 export interface Round {
   id: string;
   startTime: string; // ISO string
   endTime: string; // ISO string
-  status: "cooldown" | "active" | "finished";
+  status: "COOLDOWN" | "ACTIVE" | "FINISHED";
 }
 
 export interface Tap {

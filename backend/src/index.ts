@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import websocket from "@fastify/websocket";
 import { prisma } from "./utils/database";
 import { RoundService } from "./services/RoundService";
+import { RoundManager } from "./services/RoundManager";
 import { HealthCheckResponse } from "./types";
 
 // Импорт маршрутов
@@ -77,17 +78,6 @@ async function registerRoutes() {
   });
 }
 
-// Функция для периодического обновления статусов раундов
-function startRoundStatusUpdater() {
-  setInterval(async () => {
-    try {
-      await RoundService.updateAllRoundStatuses();
-    } catch (error) {
-      console.error("Error updating round statuses:", error);
-    }
-  }, 5000); // Обновляем каждые 5 секунд
-}
-
 // Запуск сервера
 async function start() {
   try {
@@ -95,12 +85,14 @@ async function start() {
     await prisma.$connect();
     console.log("Connected to database");
 
+    // Инициализация RoundManager
+    const roundManager = RoundManager.getInstance();
+    await roundManager.initialize();
+    console.log("RoundManager initialized");
+
     // Регистрация плагинов и маршрутов
     await registerPlugins();
     await registerRoutes();
-
-    // Запуск обновления статусов раундов
-    startRoundStatusUpdater();
 
     // Запуск сервера
     const port = parseInt(process.env.PORT || "3000");
@@ -117,6 +109,8 @@ async function start() {
 // Graceful shutdown
 process.on("SIGINT", async () => {
   console.log("Shutting down server...");
+  const roundManager = RoundManager.getInstance();
+  roundManager.shutdown();
   await fastify.close();
   await prisma.$disconnect();
   process.exit(0);
@@ -124,6 +118,8 @@ process.on("SIGINT", async () => {
 
 process.on("SIGTERM", async () => {
   console.log("Shutting down server...");
+  const roundManager = RoundManager.getInstance();
+  roundManager.shutdown();
   await fastify.close();
   await prisma.$disconnect();
   process.exit(0);

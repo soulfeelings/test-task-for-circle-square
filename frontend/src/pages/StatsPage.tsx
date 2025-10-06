@@ -1,29 +1,43 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { useUser } from '../shared/contexts/UserContext';
-import { apiClient } from '../shared/api/client';
-import type { RoundStats } from '../shared/types/api';
+import { useState, useEffect } from "react";
+import { useParams, Link } from "react-router-dom";
+import { useUser } from "../shared/contexts/UserContext";
+import { apiClient } from "../shared/api/client";
+import type { RoundStats, Round } from "../shared/types/api";
 
 export default function StatsPage() {
   const { id } = useParams<{ id: string }>();
   const [stats, setStats] = useState<RoundStats | null>(null);
+  const [round, setRound] = useState<Round | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const { user } = useUser();
 
   useEffect(() => {
     if (id) {
-      loadStats();
+      loadRoundAndStats();
     }
   }, [id]);
 
-  const loadStats = async () => {
+  const loadRoundAndStats = async () => {
     try {
       setLoading(true);
+      const roundData = await apiClient.getRoundById(id!);
+      setRound(roundData);
+
+      // Проверяем, начался ли раунд
+      const now = new Date();
+      const startTime = new Date(roundData.startTime);
+
+      if (now < startTime) {
+        setError("Статистика будет доступна после начала раунда");
+        setLoading(false);
+        return;
+      }
+
       const data = await apiClient.getRoundStats(id!);
       setStats(data);
     } catch (error) {
-      setError('Ошибка загрузки статистики');
+      setError("Ошибка загрузки статистики");
     } finally {
       setLoading(false);
     }
@@ -36,8 +50,10 @@ export default function StatsPage() {
   if (error || !stats) {
     return (
       <div className="error-page">
-        <div className="error">{error || 'Статистика не найдена'}</div>
-        <Link to="/rounds" className="back-button">← Назад к раундам</Link>
+        <div className="error">{error || "Статистика не найдена"}</div>
+        <Link to="/rounds" className="back-button">
+          ← Назад к раундам
+        </Link>
       </div>
     );
   }
@@ -48,7 +64,9 @@ export default function StatsPage() {
         <h1>🦆 The Last of Guss</h1>
         <div className="user-info">
           <span>Игрок: {user?.username}</span>
-          <Link to="/rounds" className="back-button">← Назад к раундам</Link>
+          <Link to="/rounds" className="back-button">
+            ← Назад к раундам
+          </Link>
         </div>
       </header>
 
@@ -76,7 +94,9 @@ export default function StatsPage() {
 
         <div className="stats-content">
           <div className="stats-summary">
-            <div className="summary-line">────────────────────────────────────────────────────────────</div>
+            <div className="summary-line">
+              ────────────────────────────────────────────────────────────
+            </div>
             <div className="total-stats">
               <div className="stat-item">
                 <span className="stat-label">Всего тапов:</span>
@@ -87,7 +107,7 @@ export default function StatsPage() {
                 <span className="stat-value">{stats.totalPoints}</span>
               </div>
             </div>
-            
+
             {stats.winner && (
               <div className="winner">
                 <div className="winner-label">Победитель:</div>
@@ -108,14 +128,18 @@ export default function StatsPage() {
               {stats.userStats
                 .sort((a, b) => b.points - a.points)
                 .map((player, index) => (
-                  <div 
-                    key={player.username} 
-                    className={`table-row ${player.username === user?.username ? 'current-user' : ''}`}
+                  <div
+                    key={player.username}
+                    className={`table-row ${
+                      player.username === user?.username ? "current-user" : ""
+                    }`}
                   >
                     <div className="col-name">
-                      {index === 0 && stats.winner?.username === player.username && '🏆 '}
+                      {index === 0 &&
+                        stats.winner?.username === player.username &&
+                        "🏆 "}
                       {player.username}
-                      {player.username === user?.username && ' (вы)'}
+                      {player.username === user?.username && " (вы)"}
                     </div>
                     <div className="col-taps">{player.taps}</div>
                     <div className="col-points">{player.points}</div>

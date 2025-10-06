@@ -34,7 +34,6 @@ export default function LoginPage() {
     }
   };
 
-
   return (
     <div className={styles.loginPage}>
       <div className={styles.container}>
@@ -61,17 +60,6 @@ export default function LoginPage() {
             {isLoading ? "Вход..." : "Войти"}
           </button>
         </form>
-
-        <div className={styles.hints}>
-          <p>
-            <strong>Подсказки:</strong>
-          </p>
-          <ul>
-            <li>Введите "admin" для создания раундов</li>
-            <li>Введите "Никита" для особой роли (без очков)</li>
-            <li>Любое другое имя - обычный игрок</li>
-          </ul>
-        </div>
       </div>
     </div>
   );

@@ -3,10 +3,10 @@ import type { User, Round, RoundStats, TapResponse } from "@shared/types/api";
 
 // Моковые данные
 const users: User[] = [
-  { id: "1", username: "admin", role: "admin" },
-  { id: "2", username: "Иван", role: "survivor" },
-  { id: "3", username: "Никита", role: "nikita" },
-  { id: "4", username: "Мария", role: "survivor" },
+  { id: "1", username: "admin", role: "ADMIN" },
+  { id: "2", username: "Иван", role: "SURVIVOR" },
+  { id: "3", username: "Никита", role: "NIKITA" },
+  { id: "4", username: "Мария", role: "SURVIVOR" },
 ];
 
 const rounds: Round[] = [
@@ -14,19 +14,19 @@ const rounds: Round[] = [
     id: "1",
     startTime: new Date(Date.now() - 30000).toISOString(), // 30 сек назад
     endTime: new Date(Date.now() + 30000).toISOString(), // 30 сек вперед
-    status: "active",
+    status: "ACTIVE",
   },
   {
     id: "2",
     startTime: new Date(Date.now() + 30000).toISOString(), // 30 сек вперед
     endTime: new Date(Date.now() + 90000).toISOString(), // 90 сек вперед
-    status: "cooldown",
+    status: "COOLDOWN",
   },
   {
     id: "3",
     startTime: new Date(Date.now() - 120000).toISOString(), // 2 мин назад
     endTime: new Date(Date.now() - 60000).toISOString(), // 1 мин назад
-    status: "finished",
+    status: "FINISHED",
   },
 ];
 
@@ -41,7 +41,7 @@ export const handlers = [
   // Создать новый раунд (только admin)
   http.post("/api/rounds", async ({ request }) => {
     const user = await getUserFromRequest(request);
-    if (user?.role !== "admin") {
+    if (user?.role !== "ADMIN") {
       return HttpResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -50,7 +50,7 @@ export const handlers = [
       id: Date.now().toString(),
       startTime: new Date(now.getTime() + 30000).toISOString(), // cooldown 30 сек
       endTime: new Date(now.getTime() + 90000).toISOString(), // длительность 60 сек
-      status: "cooldown",
+      status: "COOLDOWN",
     };
 
     rounds.push(newRound);
@@ -92,7 +92,7 @@ export const handlers = [
     const points = currentStats.taps % 11 === 0 ? 10 : 1;
 
     // Никита получает 0 очков
-    if (user.role === "nikita") {
+    if (user.role === "NIKITA") {
       currentStats.points += 0;
     } else {
       currentStats.points += points;
@@ -102,9 +102,9 @@ export const handlers = [
 
     const response: TapResponse = {
       success: true,
-      points: user.role === "nikita" ? 0 : points,
+      points: user.role === "NIKITA" ? 0 : points,
       totalPoints: currentStats.points,
-      message: user.role === "nikita" ? "Никита не получает очков!" : undefined,
+      message: user.role === "NIKITA" ? "Никита не получает очков!" : undefined,
     };
 
     return HttpResponse.json(response);

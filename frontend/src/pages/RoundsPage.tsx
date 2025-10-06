@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "@shared/contexts/UserContext";
 import { apiClient } from "@shared/api/client";
 import { createRoute } from "@/app/routes";
@@ -11,10 +11,20 @@ export default function RoundsPage() {
   const [rounds, setRounds] = useState<Round[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { user, logout } = useUser();
+  const { user } = useUser();
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadRounds();
+
+    // Обновляем список раундов каждые 5 секунд для актуальных статусов
+    const refreshInterval = setInterval(() => {
+      loadRounds();
+    }, 1000);
+
+    return () => {
+      clearInterval(refreshInterval);
+    };
   }, []);
 
   const loadRounds = async () => {
@@ -31,35 +41,34 @@ export default function RoundsPage() {
 
   const handleCreateRound = async () => {
     try {
-      await apiClient.createRound();
-      await loadRounds();
+      const round = await apiClient.createRound();
+      console.log("Round created:", round);
+      navigate(createRoute.round(round.id));
     } catch (error) {
       setError("Ошибка создания раунда");
     }
   };
 
   const getRoundStatus = (round: Round) => {
-    const now = new Date();
     const startTime = new Date(round.startTime);
     const endTime = new Date(round.endTime);
 
-    if (now < startTime) return "cooldown";
-    if (now > endTime) return "finished";
-    return "active";
+    if (new Date() < startTime) return "COOLDOWN";
+    if (new Date() > endTime) return "FINISHED";
+    return "ACTIVE";
   };
 
   const getTimeRemaining = (round: Round) => {
-    const now = new Date();
     const startTime = new Date(round.startTime);
     const endTime = new Date(round.endTime);
 
-    if (now < startTime) {
-      const diff = startTime.getTime() - now.getTime();
-      return Math.ceil(diff / 1000);
+    if (new Date() < startTime) {
+      const diff = startTime.getTime() - new Date().getTime();
+      return Math.max(0, Math.floor(diff / 1000));
     }
-    if (now < endTime) {
-      const diff = endTime.getTime() - now.getTime();
-      return Math.ceil(diff / 1000);
+    if (new Date() < endTime) {
+      const diff = endTime.getTime() - new Date().getTime();
+      return Math.max(0, Math.floor(diff / 1000));
     }
     return 0;
   };
@@ -72,7 +81,7 @@ export default function RoundsPage() {
       .padStart(2, "0")}`;
   };
 
-  if (loading) {
+  if (loading && !rounds.length) {
     return <div className="loading">Загрузка раундов...</div>;
   }
 
@@ -85,10 +94,14 @@ export default function RoundsPage() {
       <div className={styles.container}>
         <div className={styles.sectionHeader}>
           <h2>Раунды</h2>
-          {user?.role === "ADMIN" && (
+          {user?.role === "ADMIN" ? (
             <button onClick={handleCreateRound} className={styles.createButton}>
               Создать раунд
             </button>
+          ) : (
+            <div style={{ color: "#666", fontSize: "0.9rem" }}>
+              Роль: {user?.role || "не авторизован"}
+            </div>
           )}
         </div>
 
@@ -113,22 +126,22 @@ export default function RoundsPage() {
                   </div>
                   <div className={styles.status}>
                     Статус:{" "}
-                    {status === "cooldown"
+                    {status === "COOLDOWN"
                       ? "Cooldown"
-                      : status === "active"
+                      : status === "ACTIVE"
                       ? "Активен"
                       : "Завершен"}
                   </div>
-                  {status !== "finished" && (
+                  {status !== "FINISHED" && (
                     <div className={styles.timer}>
-                      {status === "cooldown" ? "До начала: " : "До конца: "}
+                      {status === "COOLDOWN" ? "До начала: " : "До конца: "}
                       {formatTime(timeRemaining)}
                     </div>
                   )}
                 </div>
 
                 <div className={styles.actions}>
-                  {status === "active" && (
+                  {status === "ACTIVE" && (
                     <Link
                       to={createRoute.round(round.id)}
                       className={styles.playButton}
@@ -136,12 +149,14 @@ export default function RoundsPage() {
                       Играть
                     </Link>
                   )}
-                  <Link
-                    to={createRoute.roundStats(round.id)}
-                    className={styles.statsButton}
-                  >
-                    Статистика
-                  </Link>
+                  {status !== "COOLDOWN" && (
+                    <Link
+                      to={createRoute.roundStats(round.id)}
+                      className={styles.statsButton}
+                    >
+                      Статистика
+                    </Link>
+                  )}
                 </div>
               </div>
             );

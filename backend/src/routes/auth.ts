@@ -4,6 +4,32 @@ import { authMiddleware } from "../middleware/auth";
 import { User, CreateUserRequest } from "../types";
 
 export async function authRoutes(fastify: FastifyInstance) {
+  // Логин пользователя
+  fastify.post<{
+    Body: { username: string };
+    Reply: User;
+  }>(
+    "/login",
+    async (
+      request: FastifyRequest<{ Body: { username: string } }>,
+      reply: FastifyReply
+    ): Promise<void> => {
+      try {
+        const { username } = request.body;
+
+        if (!username) {
+          await reply.status(400).send({ error: "Username is required" });
+          return;
+        }
+
+        const user = await UserService.createUser(username);
+        await reply.send(user);
+      } catch (error) {
+        await reply.status(500).send({ error: "Failed to login" });
+      }
+    }
+  );
+
   // Получить текущего пользователя
   fastify.get<{
     Reply: User;

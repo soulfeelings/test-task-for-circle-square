@@ -42,6 +42,14 @@ class ApiClient {
     return response.json();
   }
 
+  // Логин пользователя
+  async login(username: string): Promise<User> {
+    return this.request<User>("/login", {
+      method: "POST",
+      body: JSON.stringify({ username }),
+    });
+  }
+
   // Получить текущего пользователя
   async getMe(): Promise<User> {
     return this.request<User>("/me");
@@ -52,11 +60,25 @@ class ApiClient {
     return this.request<Round[]>("/rounds");
   }
 
+  // Получить раунд по ID
+  async getRoundById(id: string): Promise<Round> {
+    return this.request<Round>(`/rounds/${id}`);
+  }
+
   // Создать новый раунд (admin only)
   async createRound(): Promise<Round> {
     return this.request<Round>("/rounds", {
       method: "POST",
     });
+  }
+
+  // Получить статистику игрока в раунде
+  async getUserRoundStats(
+    roundId: string
+  ): Promise<{ taps: number; points: number }> {
+    return this.request<{ taps: number; points: number }>(
+      `/taps/stats/${roundId}`
+    );
   }
 
   // Тап по гусю
@@ -67,44 +89,17 @@ class ApiClient {
     });
   }
 
+  // Batch тапов
+  async batchTap(roundId: string, count: number): Promise<TapResponse> {
+    return this.request<TapResponse>("/taps/batch", {
+      method: "POST",
+      body: JSON.stringify({ roundId, count }),
+    });
+  }
+
   // Получить статистику раунда
   async getRoundStats(roundId: string): Promise<RoundStats> {
     return this.request<RoundStats>(`/rounds/${roundId}/stats`);
-  }
-
-  // Long polling для получения обновлений раунда
-  async pollRoundUpdates(
-    roundId: string,
-    timeout: number = 30000
-  ): Promise<Round> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-    try {
-      const response = await fetch(
-        `${API_BASE}/rounds/${roundId}/poll?username=${this.username}`,
-        {
-          signal: controller.signal,
-          headers: {
-            Accept: "application/json",
-          },
-        }
-      );
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`Polling failed: ${response.status}`);
-      }
-
-      return response.json();
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (error instanceof Error && error.name === "AbortError") {
-        throw new Error("Polling timeout");
-      }
-      throw error;
-    }
   }
 }
 

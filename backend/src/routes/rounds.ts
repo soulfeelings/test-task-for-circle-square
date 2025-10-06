@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { RoundService } from "../services/RoundService";
+import { RoundManager } from "../services/RoundManager";
 import { authMiddleware, adminMiddleware } from "../middleware/auth";
 import { Round, RoundParams } from "../types";
 
@@ -38,6 +39,11 @@ export async function roundsRoutes(fastify: FastifyInstance) {
           cooldownDuration,
           roundDuration
         );
+
+        // Регистрируем раунд в RoundManager для управления таймерами
+        const roundManager = RoundManager.getInstance();
+        await roundManager.registerRound(round);
+
         await reply.status(201).send(round);
       } catch (error) {
         await reply.status(500).send({ error: "Failed to create round" });
@@ -82,74 +88,6 @@ export async function roundsRoutes(fastify: FastifyInstance) {
         await reply.send(activeRound);
       } catch (error) {
         await reply.status(500).send({ error: "Failed to fetch active round" });
-      }
-    }
-  );
-
-  // Обновить статус раунда
-  fastify.patch<{
-    Params: RoundParams;
-    Reply: Round;
-  }>(
-    "/rounds/:id/status",
-    {
-      preHandler: [authMiddleware, adminMiddleware],
-    },
-    async (
-      request: FastifyRequest<{ Params: RoundParams }>,
-      reply: FastifyReply
-    ): Promise<void> => {
-      try {
-        const { id } = request.params as RoundParams;
-        const updatedRound = await RoundService.updateRoundStatus(id);
-        await reply.send(updatedRound);
-      } catch (error) {
-        if (error instanceof Error && error.message === "Round not found") {
-          await reply.status(404).send({ error: "Round not found" });
-          return;
-        }
-        await reply
-          .status(500)
-          .send({ error: "Failed to update round status" });
-      }
-    }
-  );
-
-  // Long polling для получения обновлений раунда
-  fastify.get<{
-    Params: RoundParams;
-    Reply: Round;
-  }>(
-    "/rounds/:id/poll",
-    {
-      preHandler: [authMiddleware],
-    },
-    async (
-      request: FastifyRequest<{ Params: RoundParams }>,
-      reply: FastifyReply
-    ): Promise<void> => {
-      try {
-        const { id } = request.params as RoundParams;
-
-        // Ждем изменения статуса раунда (максимум 30 секунд)
-        const updatedRound = await RoundService.waitForRoundUpdate(id, 30000);
-
-        if (!updatedRound) {
-          await reply.status(404).send({ error: "Round not found" });
-          return;
-        }
-
-        await reply.send(updatedRound);
-      } catch (error) {
-        if (error instanceof Error && error.message === "Round not found") {
-          await reply.status(404).send({ error: "Round not found" });
-          return;
-        }
-        if (error instanceof Error && error.message === "Timeout") {
-          await reply.status(408).send({ error: "Request timeout" });
-          return;
-        }
-        await reply.status(500).send({ error: "Failed to poll round updates" });
       }
     }
   );

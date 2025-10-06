@@ -100,6 +100,106 @@ export class TapService {
   }
 
   /**
+   * Обрабатывает batch тапов пользователя
+   */
+  static async processBatchTaps(userId: string, roundId: string, count: number): Promise<TapResult> {
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // 1. Проверяем существование пользователя и раунда
+      const [user, round] = await Promise.all([
+        tx.user.findUnique({ where: { id: userId } }),
+        tx.round.findUnique({ where: { id: roundId } }),
+      ]);
+
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      if (!round) {
+        throw new Error("Round not found");
+      }
+
+      // 2. Проверяем, что раунд активен
+      const now = new Date();
+      if (now < round.startTime || now > round.endTime) {
+        return {
+          success: false,
+          points: 0,
+          totalPoints: 0,
+          message: "Round is not active",
+        };
+      }
+
+      // 3. Получаем или создаем статистику пользователя для раунда
+      let userStats = await tx.userRoundStats.findUnique({
+        where: {
+          userId_roundId: {
+            userId,
+            roundId,
+          },
+        },
+      });
+
+      if (!userStats) {
+        userStats = await tx.userRoundStats.create({
+          data: {
+            userId,
+            roundId,
+            taps: 0,
+            points: 0,
+          },
+        });
+      }
+
+      // 4. Обрабатываем все тапы
+      let totalBatchPoints = 0;
+      const currentTaps = userStats.taps;
+
+      for (let i = 1; i <= count; i++) {
+        const tapNumber = currentTaps + i;
+        const tapPoints = calculatePointsForUser(tapNumber, user.role);
+        totalBatchPoints += tapPoints;
+
+        // Создаем запись о каждом тапе
+        await tx.tap.create({
+          data: {
+            userId,
+            roundId,
+            points: tapPoints,
+          },
+        });
+      }
+
+      // 5. Обновляем статистику пользователя
+      const updatedStats = await tx.userRoundStats.update({
+        where: {
+          userId_roundId: {
+            userId,
+            roundId,
+          },
+        },
+        data: {
+          taps: currentTaps + count,
+          points: userStats.points + totalBatchPoints,
+        },
+      });
+
+      // 6. Формируем ответ
+      const result: TapResult = {
+        success: true,
+        points: totalBatchPoints,
+        totalPoints: updatedStats.points,
+      };
+
+      // Добавляем сообщение для Никиты
+      if (user.role === UserRole.NIKITA) {
+        result.message = "Никита не получает очков!";
+      }
+
+      return result;
+    });
+  }
+
+  /**
    * Получает статистику пользователя для раунда
    */
   static async getUserRoundStats(

@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { TapService } from "../services/TapService";
-import { authMiddleware, tapMiddleware } from "../middleware/auth";
+import { authMiddleware } from "../middleware/auth";
 import { z } from "zod";
 import {
   TapRequest,
@@ -15,6 +15,12 @@ const tapRequestSchema = z.object({
   roundId: z.string().min(1),
 });
 
+// Схема валидации для batch тапов
+const batchTapRequestSchema = z.object({
+  roundId: z.string().min(1),
+  count: z.number().min(1).max(1000),
+});
+
 export async function tapsRoutes(fastify: FastifyInstance) {
   // Обработать тап
   fastify.post<{
@@ -23,7 +29,7 @@ export async function tapsRoutes(fastify: FastifyInstance) {
   }>(
     "/taps",
     {
-      preHandler: [authMiddleware, tapMiddleware],
+      preHandler: [authMiddleware],
       schema: {
         body: {
           type: "object",
@@ -68,6 +74,63 @@ export async function tapsRoutes(fastify: FastifyInstance) {
         }
 
         await reply.status(500).send({ error: "Failed to process tap" });
+      }
+    }
+  );
+
+  // Обработать batch тапов
+  fastify.post<{
+    Body: { roundId: string; count: number };
+    Reply: TapResponse;
+  }>(
+    "/taps/batch",
+    {
+      preHandler: [authMiddleware],
+      schema: {
+        body: {
+          type: "object",
+          required: ["roundId", "count"],
+          properties: {
+            roundId: { type: "string" },
+            count: { type: "number", minimum: 1, maximum: 1000 },
+          },
+        },
+      },
+    },
+    async (
+      request: FastifyRequest<{ Body: { roundId: string; count: number } }>,
+      reply: FastifyReply
+    ): Promise<void> => {
+      try {
+        const { roundId, count } = batchTapRequestSchema.parse(request.body);
+
+        if (!request.user) {
+          await reply.status(401).send({ error: "User not authenticated" });
+          return;
+        }
+
+        const result = await TapService.processBatchTaps(request.user.id, roundId, count);
+        await reply.send(result);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          await reply.status(400).send({
+            error: "Invalid request data",
+            details: error.errors,
+          });
+          return;
+        }
+
+        if (error instanceof Error) {
+          if (
+            error.message === "User not found" ||
+            error.message === "Round not found"
+          ) {
+            await reply.status(404).send({ error: error.message });
+            return;
+          }
+        }
+
+        await reply.status(500).send({ error: "Failed to process batch taps" });
       }
     }
   );

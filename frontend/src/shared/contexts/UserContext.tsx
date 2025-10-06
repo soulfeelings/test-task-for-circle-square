@@ -31,7 +31,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         const savedUsername = localStorage.getItem(USERNAME_STORAGE_KEY);
 
         if (savedUser && savedUsername) {
-          const userData = JSON.parse(savedUser);
           apiClient.setUsername(savedUsername);
 
           // Проверяем, что пользователь все еще валиден
@@ -69,8 +68,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const login = async (username: string) => {
     setIsLoading(true);
     try {
+      const userData = await apiClient.login(username);
       apiClient.setUsername(username);
-      const userData = await apiClient.getMe();
       setUser(userData);
 
       // Сохраняем данные в localStorage

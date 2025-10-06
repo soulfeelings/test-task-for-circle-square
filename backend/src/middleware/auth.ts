@@ -50,18 +50,3 @@ export async function adminMiddleware(
     return reply.status(403).send({ error: "Admin access required" });
   }
 }
-
-/**
- * Middleware для проверки, что пользователь может тапать
- */
-export async function tapMiddleware(
-  request: FastifyRequest,
-  reply: FastifyReply
-): Promise<void> {
-  if (!request.user) {
-    return reply.status(401).send({ error: "Authentication required" });
-  }
-
-  // Все роли могут тапать, но с разными результатами
-  // Никита тапает, но не получает очков
-}

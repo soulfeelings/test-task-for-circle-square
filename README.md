@@ -2,10 +2,16 @@
 
 Браузерная игра, где игроки соревнуются в тапах по виртуальному гусю.
 
-## 🚀 Запуск
+## 🚀 Быстрый запуск
 
 ```bash
-# Запустить полный стек одной командой
+# 1. Установить зависимости
+make install
+
+# 2. Настроить базу данных (нужен PostgreSQL на порту 5432)
+make db-setup
+
+# 3. Запустить полный стек
 make start
 ```
 
@@ -31,25 +37,35 @@ make start
 ## 📋 Команды
 
 ```bash
-make start     # Запустить полный стек
-make dev       # Режим разработки
-make prod      # Продакшн режим
-make clean     # Очистить контейнеры
-make help      # Показать все команды
+make start      # Запустить полный стек (фронт + бэк)
+make frontend   # Только фронтенд
+make backend    # Только бэкенд
+make dev        # Только бэкенд (dev режим)
+make build      # Собрать проект
+make clean      # Очистить node_modules
+make install    # Установить зависимости
+make db-setup   # Настроить базу данных
+make help       # Показать все команды
 ```
 
 ## 🛠 Технологии
 
 - **Frontend**: React + TypeScript + Vite
 - **Backend**: Fastify + PostgreSQL + Prisma
-- **Docker**: Полная контейнеризация
+- **Локальный запуск**: Без Docker
 
-## 🐳 Что запускается
+## 🌐 Что запускается
 
 - **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:3000
-- **PostgreSQL**: localhost:5432
+- **PostgreSQL**: localhost:5432 (нужно запустить отдельно)
 - **WebSocket**: ws://localhost:3000/api/ws
+
+## ⚙️ Требования
+
+- Node.js 18+
+- PostgreSQL 15+
+- Yarn
 
 ## 📈 МАСШТАБИРОВАНИЕ
 
