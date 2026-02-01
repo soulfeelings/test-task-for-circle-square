@@ -1,0 +1,95 @@
+@use "../shared/styles/variables.scss" as *;
+@use "../shared/styles/mixins.scss" as *;
+
+.roundsPage {
+  width: 100%;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-xl;
+
+  @include mobile {
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+}
+
+.createButton {
+  @include button-primary;
+  padding: 0.75rem $spacing-lg;
+  font-weight: bold;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.card {
+  @include card;
+  font-family: $font-mono;
+
+  &.active {
+    border-color: $border-accent;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+  }
+
+  &.cooldown {
+    border-color: $border-warning;
+  }
+
+  &.finished {
+    border-color: #666;
+    opacity: 0.7;
+  }
+}
+
+.roundId {
+  font-weight: bold;
+  margin-bottom: $spacing-sm;
+}
+
+.time {
+  margin-bottom: $spacing-md;
+  font-size: 0.9rem;
+  color: $text-secondary;
+}
+
+.statusLine {
+  @include status-line;
+}
+
+.status {
+  font-weight: bold;
+  margin-bottom: $spacing-sm;
+}
+
+.timer {
+  color: $text-primary;
+  font-weight: bold;
+}
+
+.actions {
+  display: flex;
+  gap: $spacing-md;
+  margin-top: $spacing-md;
+
+  @include mobile {
+    flex-direction: column;
+  }
+}
+
+.playButton,
+.statsButton {
+  @include button-base;
+  padding: $spacing-sm $spacing-md;
+}

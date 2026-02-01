@@ -1,0 +1,119 @@
+@use "../shared/styles/variables.scss" as *;
+@use "../shared/styles/mixins.scss" as *;
+
+.statsPage {
+  width: 100%;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: $spacing-xl;
+}
+
+.content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-xl;
+  align-items: start;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.summary {
+  @include card;
+}
+
+.summaryLine {
+  @include status-line;
+  margin-bottom: $spacing-md;
+}
+
+.totalStats {
+  margin-bottom: $spacing-lg;
+}
+
+.statItem {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: $spacing-sm;
+}
+
+.statLabel {
+  color: $text-secondary;
+}
+
+.statValue {
+  font-weight: bold;
+  color: $text-primary;
+}
+
+.winner {
+  text-align: center;
+  background-color: #0a2a0a;
+  border: 1px solid $border-accent;
+  padding: $spacing-md;
+}
+
+.winnerLabel {
+  color: $text-secondary;
+  font-size: 0.9rem;
+}
+
+.winnerName {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: $text-primary;
+  margin: $spacing-sm 0;
+}
+
+.winnerPoints {
+  font-size: 1.1rem;
+  color: $text-primary;
+}
+
+.playersStats {
+  h3 {
+    margin-bottom: $spacing-md;
+  }
+}
+
+.table {
+  @include card;
+}
+
+.tableHeader,
+.tableRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  padding: 0.75rem;
+  border-bottom: 1px solid $border-primary;
+}
+
+.tableHeader {
+  background-color: $bg-tertiary;
+  font-weight: bold;
+  border-bottom: 2px solid $border-accent;
+}
+
+.tableRow {
+  &.currentUser {
+    background-color: #0a2a0a;
+    border-left: 3px solid $border-accent;
+  }
+}
+
+.colName {
+  text-align: left;
+}
+
+.colTaps,
+.colPoints {
+  text-align: center;
+}

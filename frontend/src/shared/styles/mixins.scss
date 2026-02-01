@@ -1,0 +1,75 @@
+@use "./variables.scss" as *;
+
+// Миксины для переиспользуемых стилей
+@mixin button-base {
+  border: 1px solid $border-accent;
+  color: $text-primary;
+  padding: $spacing-sm $spacing-md;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: $font-mono;
+  transition: all 0.2s;
+  background: $button-secondary;
+
+  &:hover {
+    background-color: $button-primary;
+    color: $bg-primary;
+  }
+}
+
+@mixin button-primary {
+  @include button-base;
+  background-color: $button-primary;
+  color: $bg-primary;
+  border: none;
+
+  &:hover {
+    background-color: $button-primary-hover;
+  }
+
+  &:disabled {
+    background-color: #666;
+    cursor: not-allowed;
+  }
+}
+
+@mixin card {
+  background-color: $bg-secondary;
+  border: 1px solid $border-primary;
+  padding: $spacing-lg;
+}
+
+@mixin input-base {
+  width: 100%;
+  padding: $spacing-md;
+  background-color: $bg-secondary;
+  border: 1px solid $border-primary;
+  color: $text-primary;
+  font-family: $font-mono;
+  font-size: 1rem;
+
+  &:focus {
+    outline: none;
+    border-color: $border-accent;
+  }
+}
+
+@mixin page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-md $spacing-xl;
+  border-bottom: 1px solid $border-primary;
+  background-color: $bg-secondary;
+}
+
+@mixin status-line {
+  margin: $spacing-sm 0;
+  color: $border-primary;
+}
+
+@mixin mobile {
+  @media (max-width: $mobile) {
+    @content;
+  }
+}

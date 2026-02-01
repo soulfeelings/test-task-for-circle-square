@@ -1,0 +1,94 @@
+@use "../shared/styles/variables.scss" as *;
+@use "../shared/styles/mixins.scss" as *;
+
+.gamePage {
+  width: 100%;
+}
+
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.info {
+  margin-bottom: $spacing-xl;
+}
+
+.roundId {
+  font-family: $font-mono;
+  font-size: 0.9rem;
+  color: $text-secondary;
+  margin-bottom: $spacing-md;
+}
+
+.status {
+  @include card;
+}
+
+.statusText {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: $spacing-sm;
+}
+
+.timer {
+  font-size: 1.5rem;
+  color: $text-primary;
+  font-weight: bold;
+  margin-bottom: $spacing-sm;
+}
+
+.userPoints {
+  font-size: 1.1rem;
+  color: $text-primary;
+}
+
+.gooseContainer {
+  margin: $spacing-xl 0;
+}
+
+.gooseArt {
+  font-size: 0.7rem;
+  line-height: 0.8;
+  margin-bottom: $spacing-md;
+}
+
+.gooseButton {
+  @include button-primary;
+  padding: $spacing-md $spacing-xl;
+  font-size: 1.2rem;
+  font-weight: bold;
+  transition: all 0.1s;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+
+  &.tapping {
+    background-color: $text-error;
+    transform: scale(0.95);
+  }
+}
+
+.viewStatsButton {
+  display: inline-block;
+  @include button-primary;
+  padding: 0.75rem $spacing-lg;
+  font-weight: bold;
+  margin-top: $spacing-md;
+  text-decoration: none;
+}
+
+.message {
+  background-color: #2a2a0a;
+  border: 1px solid $border-warning;
+  color: $text-warning;
+  padding: $spacing-md;
+  margin-top: $spacing-md;
+}
+
+.gooseArtPre {
+  cursor: pointer;
+  user-select: none;
+}

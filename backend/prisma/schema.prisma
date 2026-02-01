@@ -1,0 +1,81 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SURVIVOR
+  NIKITA
+  ADMIN
+}
+
+enum RoundStatus {
+  COOLDOWN
+  ACTIVE
+  FINISHED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  role      UserRole
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Связи
+  taps      Tap[]
+  userRoundStats UserRoundStats[]
+
+  @@map("users")
+}
+
+model Round {
+  id        String      @id @default(cuid())
+  startTime DateTime
+  endTime   DateTime
+  status    RoundStatus @default(COOLDOWN)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  // Связи
+  taps      Tap[]
+  userRoundStats UserRoundStats[]
+
+  @@map("rounds")
+}
+
+model Tap {
+  id        String   @id @default(cuid())
+  userId    String
+  roundId   String
+  points    Int
+  timestamp DateTime @default(now())
+
+  // Связи
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  round     Round    @relation(fields: [roundId], references: [id], onDelete: Cascade)
+
+  @@map("taps")
+}
+
+model UserRoundStats {
+  id       String @id @default(cuid())
+  userId   String
+  roundId  String
+  taps     Int    @default(0)
+  points   Int    @default(0)
+
+  // Связи
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  round    Round  @relation(fields: [roundId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roundId])
+  @@map("user_round_stats")
+}
